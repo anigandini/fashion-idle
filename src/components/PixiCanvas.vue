@@ -23,6 +23,7 @@ onMounted(async () => {
   }
 
   props.setupScene(app)
+  
 })
 </script>
 

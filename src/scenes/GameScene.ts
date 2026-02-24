@@ -20,7 +20,7 @@ export function createGameScene(app: PIXI.Application) {
   street.endFill()
   app.stage.addChild(street)
 
-  function createBuilding(x:number, label:string, color:number, id:string) {
+  function createBuilding(x: number, label: string, color: number, id: string) {
     const container = new PIXI.Container()
 
     const building = new PIXI.Graphics()
@@ -41,7 +41,7 @@ export function createGameScene(app: PIXI.Application) {
       }
 
       if (id === 'boutique') {
-        store.clickEarn()
+        store.collectCash()
       } else {
         store.upgradeBuilding(id)
       }
@@ -67,6 +67,18 @@ export function createGameScene(app: PIXI.Application) {
     buildingsMap[id] = container
   }
 
+  const cashText = new PIXI.Text('', {
+    fill: 0xffff00,
+    fontSize: 16,
+    fontWeight: 'bold'
+  })
+
+  cashText.anchor.set(0.5)
+  cashText.x = 80
+  cashText.y = -10
+
+
+
   createBuilding(80, 'Boutique', 0xff4da6, 'boutique')
   createBuilding(280, '📸 Influencer', 0x6c5ce7, 'influencer')
   createBuilding(480, '🧵 Atelier', 0x00b894, 'atelier')
@@ -75,9 +87,16 @@ export function createGameScene(app: PIXI.Application) {
     store.buildings.forEach(b => {
       const container = buildingsMap[b.id]
       if (!container) return
+      if (b.id === "boutique") {
+        container.addChild(cashText)
+        app.ticker.add(() => {
+          cashText.text = `$${Math.floor(store.storedCash)}`
+        })
+      }
       container.alpha = b.unlocked ? 1 : 0.35
     })
   }
 
   updateVisibility()
+
 }

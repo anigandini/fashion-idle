@@ -4,6 +4,6 @@ export function startIncomeLoop() {
   const store = useGameStore()
 
   setInterval(() => {
-    store.addMoney(store.incomePerSecond)
+    store.produceIncome(store.incomePerSecond)
   }, 1000)
 }

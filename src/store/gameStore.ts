@@ -4,7 +4,9 @@ import { buildings } from '../game/buildings'
 export const useGameStore = defineStore('game', {
   state: () => ({
     money: 0,
-    incomePerSecond: 1,
+    storedCash: 0,
+    maxStorage: 50,
+    incomePerSecond: 0.2,
     clickValue: 1,
     buildings
   }),
@@ -12,6 +14,21 @@ export const useGameStore = defineStore('game', {
   actions: {
     addMoney(amount: number) {
       this.money += amount
+    },
+
+    produceIncome(delta: number) {
+      const produced = this.incomePerSecond * delta
+
+      this.storedCash += produced
+
+      if (this.storedCash > this.maxStorage) {
+        this.storedCash = this.maxStorage
+      }
+    },
+
+    collectCash() {
+      this.money += this.storedCash
+      this.storedCash = 0
     },
 
     clickEarn() {
