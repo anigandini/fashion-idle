@@ -1,13 +1,64 @@
 import { defineStore } from 'pinia'
+import { buildings } from '../game/buildings'
 
 export const useGameStore = defineStore('game', {
   state: () => ({
     money: 0,
-    incomePerSecond: 1
+    incomePerSecond: 1,
+    clickValue: 1,
+    buildings
   }),
+
   actions: {
     addMoney(amount: number) {
       this.money += amount
+    },
+
+    clickEarn() {
+      this.money += this.clickValue
+    },
+
+    unlockBuilding(id: string) {
+      const b = this.buildings.find(b => b.id === id)
+      if (!b || b.unlocked) return
+
+      if (this.money < b.unlockCost) return
+
+      this.money -= b.unlockCost
+      b.unlocked = true
+      b.level = 1
+
+      if (id === 'atelier') this.incomePerSecond += 3
+      if (id === 'influencer') this.incomePerSecond += 1
+    },
+
+    upgradeBuilding(id: string) {
+      const b = this.buildings.find(b => b.id === id)
+      if (!b || !b.unlocked) return
+
+      const cost = this.getUpgradeCost(b)
+
+      if (this.money < cost) return
+
+      this.money -= cost
+      b.level++
+
+      if (id === 'boutique') {
+        this.clickValue += 1
+        this.incomePerSecond += 0.5
+      }
+
+      if (id === 'influencer') {
+        this.incomePerSecond += 1.5
+      }
+
+      if (id === 'atelier') {
+        this.incomePerSecond += 3
+      }
+    },
+
+    getUpgradeCost(b) {
+      return Math.floor(20 * Math.pow(1.4, b.level))
     }
   }
 })
