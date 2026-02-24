@@ -27,8 +27,11 @@ export const useGameStore = defineStore('game', {
     },
 
     collectCash() {
-      this.money += this.storedCash
-      this.storedCash = 0
+      const boutique = this.buildings.find(b => b.id === "boutique");
+      if (!boutique) return;
+
+      this.money += boutique.accumulated ?? 0;
+      boutique.accumulated = 0;
     },
 
     clickEarn() {

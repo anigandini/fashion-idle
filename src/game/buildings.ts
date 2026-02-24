@@ -6,6 +6,7 @@ export type Building = {
   level: number;
   production?: number;
   accumulated?: number;
+  storage?: number; 
 };
 
 export const buildings: Building[] = [
@@ -15,8 +16,9 @@ export const buildings: Building[] = [
     unlocked: true,
     unlockCost: 0,
     level: 1,
-    production: 1,
+    production: 0.2,
     accumulated: 0,
+    storage: 30,
   },
   {
     id: "influencer",
@@ -24,6 +26,9 @@ export const buildings: Building[] = [
     unlocked: false,
     unlockCost: 50,
     level: 0,
+    production: 0.5,
+    accumulated: 0,
+    storage: 50,
   },
   {
     id: "atelier",
@@ -31,15 +36,26 @@ export const buildings: Building[] = [
     unlocked: false,
     unlockCost: 150,
     level: 0,
+    production: 2,
+    accumulated: 0,
+    storage: 80,
   },
 ];
 
+
 export function updateBuildings(delta: number) {
-  const boutique = buildings.find(b => b.id === "boutique");
+  for (const building of buildings) {
+    if (!building.unlocked) continue;
+    if (building.production === undefined) continue;
+    if (building.accumulated === undefined) continue;
 
-  if (!boutique || boutique.production === undefined || boutique.accumulated === undefined) {
-    return;
+    const productionPerSecond = building.production * building.level;
+
+    const nextValue =
+      building.accumulated + productionPerSecond * delta;
+
+    const maxStorage = building.storage ?? Infinity;
+
+    building.accumulated = Math.min(nextValue, maxStorage);
   }
-
-  boutique.accumulated += boutique.production * delta;
 }
