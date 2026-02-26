@@ -28,7 +28,7 @@ export function createGameScene(app: PIXI.Application) {
   // HUD
   createHUD(app);
 
-  // 🎨 Colores por estilo
+  // 🎨 Colors by style
   const styleColors: Record<string, number> = {
     clasic: 0xff4da6,
     romantic: 0xff9ff3,
@@ -58,7 +58,7 @@ export function createGameScene(app: PIXI.Application) {
         return;
       }
 
-      // 💰 Collect si hay acumulado
+      // 💰 Collect or upgrade
       if (b.accumulated > 0) {
         store.collect(id);
       } else {
@@ -70,7 +70,7 @@ export function createGameScene(app: PIXI.Application) {
       setTimeout(() => container.scale.set(1), 90);
     });
 
-    // Label nombre
+    // Label name
     const text = new PIXI.Text(name, {
       fill: 0xffffff,
       fontSize: 14,
@@ -83,7 +83,7 @@ export function createGameScene(app: PIXI.Application) {
     text.x = 80;
     text.y = 110;
 
-    // Nivel
+    // Level
     const levelText = new PIXI.Text("", {
       fontSize: 12,
       fill: 0xffffff,
@@ -95,7 +95,7 @@ export function createGameScene(app: PIXI.Application) {
 
     levelLabels[id] = levelText;
 
-    // 💰 Badge acumulado
+    // 💰 Badge accumulated
     const cashText = new PIXI.Text("", {
       fill: 0x000000,
       fontSize: 16,
@@ -117,7 +117,7 @@ export function createGameScene(app: PIXI.Application) {
     buildingsMap[id] = container;
   }
 
-  // 🏬 Crear dinámicamente desde el store
+  // 🏬 Create building from store
   store.buildings.forEach((b, index) => {
     createBuilding(80 + index * 200, b);
   });
@@ -140,7 +140,6 @@ export function createGameScene(app: PIXI.Application) {
     const delta = (now - lastTime) / 1000;
     lastTime = now;
 
-    // 🔥 Ahora usamos el store directamente
     store.update(delta);
 
     store.buildings.forEach(b => {
@@ -150,10 +149,7 @@ export function createGameScene(app: PIXI.Application) {
 
       if (!badge || !level || !container) return;
 
-      // Nivel
       level.text = `Lv.${b.level}`;
-
-      // Badge dinero acumulado
       const amount = Math.floor(b.accumulated ?? 0);
 
       if (amount > 0) {
@@ -168,7 +164,6 @@ export function createGameScene(app: PIXI.Application) {
         badge.visible = false;
       }
 
-      // Pequeño glow si está lleno
       if (b.accumulated >= b.storage) {
         container.scale.set(1.03);
       } else {
