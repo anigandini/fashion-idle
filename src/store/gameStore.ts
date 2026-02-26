@@ -1,84 +1,126 @@
 import { defineStore } from 'pinia'
-import { buildings } from '../game/buildings'
+import type { Building } from '../game/building';
 
 export const useGameStore = defineStore('game', {
   state: () => ({
     money: 0,
-    storedCash: 0,
-    maxStorage: 50,
-    incomePerSecond: 0.2,
-    clickValue: 1,
-    buildings
+    buildings: [
+      {
+        id: "clasic",
+        name: "Maison Clásica",
+        unlocked: true,
+        unlockCost: 0,
+        level: 1,
+        baseProduction: 1,
+        storage: 30,
+        accumulated: 0,
+        upgradeBaseCost: 20,
+        autoCollectUnlocked: false,
+      },
+      {
+        id: "romantic",
+        name: "L'Amour Boutique",
+        unlocked: false,
+        unlockCost: 250,
+        level: 0,
+        baseProduction: 5,
+        storage: 80,
+        accumulated: 0,
+        upgradeBaseCost: 100,
+        autoCollectUnlocked: false,
+      },
+      {
+        id: "elegant",
+        name: "Elegance House",
+        unlocked: false,
+        unlockCost: 1000,
+        level: 0,
+        baseProduction: 20,
+        storage: 200,
+        accumulated: 0,
+        upgradeBaseCost: 500,
+        autoCollectUnlocked: false,
+      },
+    ] as Building[],
   }),
 
+  getters: {
+    totalProduction(state) {
+      return state.buildings.reduce((total, b) => {
+        if (!b.unlocked) return total;
+        return total + b.baseProduction * b.level;
+      }, 0);
+    },
+  },
+
   actions: {
-    addMoney(amount: number) {
-      this.money += amount
+    // =====================
+    // UPDATE (llamado desde Pixi ticker)
+    // =====================
+    update(delta: number) {
+      this.buildings.forEach((b) => {
+        if (!b.unlocked || b.level === 0) return;
+
+        const productionPerSecond = b.baseProduction * b.level;
+
+        if (b.autoCollectUnlocked) {
+          this.money += productionPerSecond * delta;
+        } else {
+          const next = b.accumulated + productionPerSecond * delta;
+          b.accumulated = Math.min(next, b.storage);
+        }
+      });
     },
 
-    produceIncome(delta: number) {
-      const produced = this.incomePerSecond * delta
+    // =====================
+    // RECOLECTAR
+    // =====================
+    collect(buildingId: string) {
+      const b = this.buildings.find(b => b.id === buildingId);
+      if (!b || b.accumulated <= 0) return;
 
-      this.storedCash += produced
+      this.money += b.accumulated;
+      b.accumulated = 0;
+    },
 
-      if (this.storedCash > this.maxStorage) {
-        this.storedCash = this.maxStorage
+    // =====================
+    // UPGRADE
+    // =====================
+    upgrade(buildingId: string) {
+      const b = this.buildings.find(b => b.id === buildingId);
+      if (!b || !b.unlocked) return;
+
+      const cost = this.getUpgradeCost(b);
+
+      if (this.money < cost) return;
+
+      this.money -= cost;
+      b.level += 1;
+
+      // Storage escala levemente
+      b.storage += 5;
+
+      if (b.level >= 5) {
+        b.autoCollectUnlocked = true;
       }
     },
 
-    collectCash() {
-      const boutique = this.buildings.find(b => b.id === "boutique");
-      if (!boutique) return;
-
-      this.money += boutique.accumulated ?? 0;
-      boutique.accumulated = 0;
+    getUpgradeCost(building: Building) {
+      return building.upgradeBaseCost * Math.pow(1.15, building.level);
     },
 
-    clickEarn() {
-      this.money += this.clickValue
+    // =====================
+    // UNLOCK
+    // =====================
+    unlock(buildingId: string) {
+      const b = this.buildings.find(b => b.id === buildingId);
+      if (!b || b.unlocked) return;
+
+      if (this.money < b.unlockCost) return;
+
+      this.money -= b.unlockCost;
+      b.unlocked = true;
+      b.level = 1;
     },
-
-    unlockBuilding(id: string) {
-      const b = this.buildings.find(b => b.id === id)
-      if (!b || b.unlocked) return
-
-      if (this.money < b.unlockCost) return
-
-      this.money -= b.unlockCost
-      b.unlocked = true
-      b.level = 1
-
-      if (id === 'atelier') this.incomePerSecond += 3
-      if (id === 'influencer') this.incomePerSecond += 1
-    },
-
-    upgradeBuilding(id: string) {
-      const b = this.buildings.find(b => b.id === id)
-      if (!b || !b.unlocked) return
-
-      const cost = this.getUpgradeCost(b)
-
-      if (this.money < cost) return
-
-      this.money -= cost
-      b.level++
-
-      if (id === 'boutique') {
-        this.clickValue += 1
-        this.incomePerSecond += 0.5
-      }
-
-      if (id === 'influencer') {
-        this.incomePerSecond += 1.5
-      }
-
-      if (id === 'atelier') {
-        this.incomePerSecond += 3
-      }
-    },
-
-    getUpgradeCost(b) {
-      return Math.floor(20 * Math.pow(1.4, b.level))
-    }
-  }
-})
+  },
+});

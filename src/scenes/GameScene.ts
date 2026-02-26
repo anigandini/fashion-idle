@@ -1,6 +1,5 @@
 import * as PIXI from "pixi.js";
 import { useGameStore } from "../store/gameStore";
-import { updateBuildings } from "../game/buildings";
 import { createHUD } from "../game/hud";
 
 export function createGameScene(app: PIXI.Application) {
@@ -26,11 +25,23 @@ export function createGameScene(app: PIXI.Application) {
 
   app.stage.addChild(street);
 
-  function createBuilding(x: number, label: string, color: number, id: string) {
+  // HUD
+  createHUD(app);
+
+  // 🎨 Colores por estilo
+  const styleColors: Record<string, number> = {
+    clasic: 0xff4da6,
+    romantic: 0xff9ff3,
+    elegant: 0x2d3436,
+  };
+
+  function createBuilding(x: number, buildingData: any) {
+    const { id, name } = buildingData;
+
     const container = new PIXI.Container();
 
     const building = new PIXI.Graphics()
-      .beginFill(color)
+      .beginFill(styleColors[id] ?? 0xffffff)
       .drawRoundedRect(0, 0, 160, 220, 20)
       .endFill();
 
@@ -39,17 +50,19 @@ export function createGameScene(app: PIXI.Application) {
 
     building.on("pointerdown", () => {
       const b = store.buildings.find(b => b.id === id);
+      if (!b) return;
 
-      if (!b?.unlocked) {
-        store.unlockBuilding(id);
-        updateVisibility();
+      // 🔒 Unlock
+      if (!b.unlocked) {
+        store.unlock(id);
         return;
       }
 
-      if (id === "boutique") {
-        store.collectCash();
+      // 💰 Collect si hay acumulado
+      if (b.accumulated > 0) {
+        store.collect(id);
       } else {
-        store.upgradeBuilding(id);
+        store.upgrade(id);
       }
 
       // click feedback
@@ -57,18 +70,20 @@ export function createGameScene(app: PIXI.Application) {
       setTimeout(() => container.scale.set(1), 90);
     });
 
-    // building label
-    const text = new PIXI.Text(label, {
+    // Label nombre
+    const text = new PIXI.Text(name, {
       fill: 0xffffff,
       fontSize: 14,
       align: "center",
+      wordWrap: true,
+      wordWrapWidth: 140,
     });
 
     text.anchor.set(0.5);
     text.x = 80;
     text.y = 110;
 
-    // level label
+    // Nivel
     const levelText = new PIXI.Text("", {
       fontSize: 12,
       fill: 0xffffff,
@@ -80,7 +95,7 @@ export function createGameScene(app: PIXI.Application) {
 
     levelLabels[id] = levelText;
 
-    // 💰 accumulated badge
+    // 💰 Badge acumulado
     const cashText = new PIXI.Text("", {
       fill: 0x000000,
       fontSize: 16,
@@ -102,13 +117,10 @@ export function createGameScene(app: PIXI.Application) {
     buildingsMap[id] = container;
   }
 
-  // HUD
-  createHUD(app);
-
-  // Buildings
-  createBuilding(80, "Boutique", 0xff4da6, "boutique");
-  createBuilding(280, "📸 Influencer", 0x6c5ce7, "influencer");
-  createBuilding(480, "🧵 Atelier", 0x00b894, "atelier");
+  // 🏬 Crear dinámicamente desde el store
+  store.buildings.forEach((b, index) => {
+    createBuilding(80 + index * 200, b);
+  });
 
   function updateVisibility() {
     store.buildings.forEach(b => {
@@ -120,7 +132,7 @@ export function createGameScene(app: PIXI.Application) {
 
   updateVisibility();
 
-  // ⏱ GLOBAL GAME LOOP
+  // ⏱ GAME LOOP
   let lastTime = performance.now();
 
   app.ticker.add(() => {
@@ -128,8 +140,8 @@ export function createGameScene(app: PIXI.Application) {
     const delta = (now - lastTime) / 1000;
     lastTime = now;
 
-    // actualizar economía
-    updateBuildings(delta);
+    // 🔥 Ahora usamos el store directamente
+    store.update(delta);
 
     store.buildings.forEach(b => {
       const badge = cashLabels[b.id];
@@ -138,15 +150,14 @@ export function createGameScene(app: PIXI.Application) {
 
       if (!badge || !level || !container) return;
 
-      // update level
+      // Nivel
       level.text = `Lv.${b.level}`;
 
-      // update accumulated badge
+      // Badge dinero acumulado
       const amount = Math.floor(b.accumulated ?? 0);
 
       if (amount > 0) {
         if (badge.text !== `💰 ${amount}`) {
-          // animación suave
           badge.scale.set(1.4);
           setTimeout(() => badge.scale.set(1), 120);
         }
@@ -157,12 +168,14 @@ export function createGameScene(app: PIXI.Application) {
         badge.visible = false;
       }
 
-      // glow cuando hay dinero
-      if (b.id === "boutique" && amount > 0) {
+      // Pequeño glow si está lleno
+      if (b.accumulated >= b.storage) {
         container.scale.set(1.03);
       } else {
         container.scale.set(1);
       }
     });
+
+    updateVisibility();
   });
 }
