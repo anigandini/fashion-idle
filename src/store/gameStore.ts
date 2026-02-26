@@ -73,11 +73,12 @@ export const useGameStore = defineStore('game', {
     },
 
     // =====================
-    // RECOLECTAR
+    // COLLECT 
     // =====================
     collect(buildingId: string) {
       const b = this.buildings.find(b => b.id === buildingId);
-      if (!b || b.accumulated <= 0) return;
+
+      if (!b || !b.unlocked || b.accumulated <= 0) return;
 
       this.money += b.accumulated;
       b.accumulated = 0;
