@@ -101,9 +101,9 @@ export const useGameStore = defineStore('game', {
       // Storage escala levemente
       b.storage += 5;
 
-      if (b.level >= 5) {
+      /*if (b.level >= 50) {
         b.autoCollectUnlocked = true;
-      }
+      }*/
     },
 
     getUpgradeCost(building: Building) {

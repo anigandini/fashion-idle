@@ -9,6 +9,9 @@ export function createGameScene(app: PIXI.Application) {
   const buildingsMap: Record<string, PIXI.Container> = {};
   const cashLabels: Record<string, PIXI.Text> = {};
   const levelLabels: Record<string, PIXI.Text> = {};
+  const upgradeLabels: Record<string, PIXI.Text> = {};
+  const upgradeButtons: Record<string, PIXI.Graphics> = {};
+  const collectButtons: Record<string, PIXI.Graphics> = {};
 
   // 🌸 SKY
   const bg = new PIXI.Graphics()
@@ -26,10 +29,8 @@ export function createGameScene(app: PIXI.Application) {
 
   app.stage.addChild(street);
 
-  // HUD
   createHUD(app);
 
-  // 🎨 Colors by style
   const styleColors: Record<string, number> = {
     clasic: 0xff4da6,
     romantic: 0xff9ff3,
@@ -46,6 +47,9 @@ export function createGameScene(app: PIXI.Application) {
       .drawRoundedRect(0, 0, 160, 220, 20)
       .endFill();
 
+    container.addChild(building);
+
+    // 🔓 UNLOCK ON CLICK (building body)
     building.eventMode = "static";
     building.cursor = "pointer";
 
@@ -55,29 +59,82 @@ export function createGameScene(app: PIXI.Application) {
 
       if (!b.unlocked) {
         store.unlock(id);
-        return;
       }
-
-      if (b.accumulated > 0) {
-        const collectedAmount = Math.floor(b.accumulated);
-
-        store.collect(id);
-
-        spawnFloatingText(
-          container.x + 80,
-          container.y - 20,
-          collectedAmount
-        );
-      } else {
-        store.upgrade(id);
-      }
-
-      container.scale.set(0.92);
-      setTimeout(() => container.scale.set(1), 90);
     });
 
-    // Label name
-    const text = new PIXI.Text(name, {
+    // 🟢 COLLECT BUTTON
+    const collectButton = new PIXI.Graphics()
+      .beginFill(0x2ecc71)
+      .drawRoundedRect(0, 0, 60, 24, 6)
+      .endFill();
+
+    collectButton.x = 10;
+    collectButton.y = 180;
+    collectButton.eventMode = "static";
+    collectButton.cursor = "pointer";
+
+    const collectLabel = new PIXI.Text("Collect", {
+      fontSize: 12,
+      fill: 0xffffff,
+    });
+
+    collectLabel.anchor.set(0.5);
+    collectLabel.x = 30;
+    collectLabel.y = 12;
+
+    collectButton.addChild(collectLabel);
+    container.addChild(collectButton);
+
+    collectButtons[id] = collectButton;
+
+    collectButton.on("pointerdown", () => {
+      const b = store.buildings.find(b => b.id === id);
+      if (!b || !b.unlocked || b.accumulated <= 0) return;
+
+      const collectedAmount = Math.floor(b.accumulated);
+      store.collect(id);
+
+      spawnFloatingText(container.x + 80, container.y - 20, collectedAmount);
+    });
+
+    // 🔵 UPGRADE BUTTON
+    const upgradeButton = new PIXI.Graphics()
+      .beginFill(0x3498db)
+      .drawRoundedRect(0, 0, 70, 24, 6)
+      .endFill();
+
+    upgradeButton.x = 80;
+    upgradeButton.y = 180;
+    upgradeButton.eventMode = "static";
+    upgradeButton.cursor = "pointer";
+
+    const upgradeLabel = new PIXI.Text("", {
+      fontSize: 12,
+      fill: 0xffffff,
+    });
+
+    upgradeLabel.anchor.set(0.5);
+    upgradeLabel.x = 35;
+    upgradeLabel.y = 12;
+
+    upgradeButton.addChild(upgradeLabel);
+    container.addChild(upgradeButton);
+
+    upgradeLabels[id] = upgradeLabel;
+    upgradeButtons[id] = upgradeButton;
+
+    upgradeButton.on("pointerdown", () => {
+      const b = store.buildings.find(b => b.id === id);
+      if (!b || !b.unlocked) return;
+
+      const cost = store.getUpgradeCost(b);
+      if (store.money < cost) return;
+
+      store.upgrade(id);
+    });
+
+    // 🏷 NAME
+    const nameText = new PIXI.Text(name, {
       fill: 0xffffff,
       fontSize: 14,
       align: "center",
@@ -85,11 +142,13 @@ export function createGameScene(app: PIXI.Application) {
       wordWrapWidth: 140,
     });
 
-    text.anchor.set(0.5);
-    text.x = 80;
-    text.y = 110;
+    nameText.anchor.set(0.5);
+    nameText.x = 80;
+    nameText.y = 120;
 
-    // Level
+    container.addChild(nameText);
+
+    // 🏷 LEVEL / LOCK
     const levelText = new PIXI.Text("", {
       fontSize: 12,
       fill: 0xffffff,
@@ -99,9 +158,10 @@ export function createGameScene(app: PIXI.Application) {
     levelText.x = 150;
     levelText.y = 10;
 
+    container.addChild(levelText);
     levelLabels[id] = levelText;
 
-    // 💰 Badge accumulated
+    // 💰 ACCUMULATED BADGE
     const cashText = new PIXI.Text("", {
       fill: 0x000000,
       fontSize: 16,
@@ -113,9 +173,9 @@ export function createGameScene(app: PIXI.Application) {
     cashText.y = -15;
     cashText.visible = false;
 
+    container.addChild(cashText);
     cashLabels[id] = cashText;
 
-    container.addChild(building, text, levelText, cashText);
     container.x = x;
     container.y = app.screen.height - 370;
 
@@ -123,7 +183,6 @@ export function createGameScene(app: PIXI.Application) {
     buildingsMap[id] = container;
   }
 
-  // 🏬 Create building from store
   store.buildings.forEach((b, index) => {
     createBuilding(80 + index * 200, b);
   });
@@ -131,14 +190,31 @@ export function createGameScene(app: PIXI.Application) {
   function updateVisibility() {
     store.buildings.forEach(b => {
       const container = buildingsMap[b.id];
-      if (!container) return;
-      container.alpha = b.unlocked ? 1 : 0.35;
+      const level = levelLabels[b.id];
+      const upgradeLabel = upgradeLabels[b.id];
+      const upgradeButton = upgradeButtons[b.id];
+      const collectButton = collectButtons[b.id];
+
+      if (!container || !level || !upgradeLabel || !upgradeButton || !collectButton) return;
+
+      if (!b.unlocked) {
+        container.alpha = 0.35;
+        level.text = `Unlock $${b.unlockCost}`;
+        upgradeButton.alpha = 0;
+        collectButton.alpha = 0;
+      } else {
+        container.alpha = 1;
+        level.text = `Lv.${b.level}`;
+
+        const cost = store.getUpgradeCost(b);
+        upgradeLabel.text = `Up $${Math.floor(cost)}`;
+
+        upgradeButton.alpha = store.money >= cost ? 1 : 0.5;
+        collectButton.alpha = b.accumulated > 0 ? 1 : 0.5;
+      }
     });
   }
 
-  updateVisibility();
-
-  // ⏱ GAME LOOP
   let lastTime = performance.now();
 
   app.ticker.add(() => {
@@ -150,20 +226,13 @@ export function createGameScene(app: PIXI.Application) {
 
     store.buildings.forEach(b => {
       const badge = cashLabels[b.id];
-      const level = levelLabels[b.id];
       const container = buildingsMap[b.id];
 
-      if (!badge || !level || !container) return;
+      if (!badge || !container) return;
 
-      level.text = `Lv.${b.level}`;
       const amount = Math.floor(b.accumulated ?? 0);
 
       if (amount > 0) {
-        if (badge.text !== `💰 ${amount}`) {
-          badge.scale.set(1.4);
-          setTimeout(() => badge.scale.set(1), 120);
-        }
-
         badge.text = `💰 ${amount}`;
         badge.visible = true;
       } else {
@@ -194,7 +263,7 @@ export function createGameScene(app: PIXI.Application) {
     app.stage.addChild(text);
 
     let life = 0;
-    const duration = 0.8; // seconds
+    const duration = 0.8;
 
     const tickerFn = (ticker: Ticker) => {
       const deltaSeconds = ticker.deltaMS / 1000;
