@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js";
 import { useGameStore } from "../store/gameStore";
 import { createHUD } from "../game/hud";
+import { Ticker } from "pixi.js";
 
 export function createGameScene(app: PIXI.Application) {
   const store = useGameStore();
@@ -52,20 +53,25 @@ export function createGameScene(app: PIXI.Application) {
       const b = store.buildings.find(b => b.id === id);
       if (!b) return;
 
-      // 🔒 Unlock
       if (!b.unlocked) {
         store.unlock(id);
         return;
       }
 
-      // 💰 Collect or upgrade
       if (b.accumulated > 0) {
+        const collectedAmount = Math.floor(b.accumulated);
+
         store.collect(id);
+
+        spawnFloatingText(
+          container.x + 80,
+          container.y - 20,
+          collectedAmount
+        );
       } else {
         store.upgrade(id);
       }
 
-      // click feedback
       container.scale.set(0.92);
       setTimeout(() => container.scale.set(1), 90);
     });
@@ -173,4 +179,38 @@ export function createGameScene(app: PIXI.Application) {
 
     updateVisibility();
   });
+
+  function spawnFloatingText(x: number, y: number, amount: number) {
+    const text = new PIXI.Text(`+$${amount}`, {
+      fill: 0x2ecc71,
+      fontSize: 18,
+      fontWeight: "bold",
+    });
+
+    text.anchor.set(0.5);
+    text.x = x;
+    text.y = y;
+
+    app.stage.addChild(text);
+
+    let life = 0;
+    const duration = 0.8; // seconds
+
+    const tickerFn = (ticker: Ticker) => {
+      const deltaSeconds = ticker.deltaMS / 1000;
+      life += deltaSeconds;
+
+      text.y -= 40 * deltaSeconds;
+      text.alpha = 1 - life / duration;
+
+      if (life >= duration) {
+        app.ticker.remove(tickerFn);
+        app.stage.removeChild(text);
+        text.destroy();
+      }
+    };
+
+    app.ticker.add(tickerFn);
+  }
 }
+
