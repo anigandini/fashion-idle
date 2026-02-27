@@ -80,7 +80,7 @@ export function createHUD(app: PIXI.Application) {
     }
 
     // income update
-    incomeText.text = `$${store.incomePerSecond}/sec`;
+    incomeText.text = `⚡ ${Math.floor(store.totalProduction)} /s`;
   });
 
   return hud;
