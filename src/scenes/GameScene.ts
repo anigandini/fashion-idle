@@ -74,18 +74,13 @@ export function createGameScene(app: PIXI.Application) {
     lockOverlays[id] = lockOverlay;
     lockIcons[id] = lockIcon;
 
-
-    // 🔓 UNLOCK ON CLICK (building body)
     building.eventMode = "static";
     building.cursor = "pointer";
 
     building.on("pointerdown", () => {
       const b = store.buildings.find(b => b.id === id);
       if (!b) return;
-
-      if (!b.unlocked) {
-        openUnlockModal(id);
-      }
+      openBuildingModal(id);
     });
 
     // 🟢 COLLECT BUTTON
@@ -315,66 +310,76 @@ export function createGameScene(app: PIXI.Application) {
     app.ticker.add(tickerFn);
   }
 
-  function openUnlockModal(id: string) {
+  function openBuildingModal(id: string) {
+    const modal = new PIXI.Container();
     const b = store.buildings.find(b => b.id === id);
     if (!b) return;
 
-    const modal = new PIXI.Container();
-
-    // Fondo oscuro
     const bg = new PIXI.Graphics()
       .beginFill(0x000000, 0.7)
       .drawRect(0, 0, app.screen.width, app.screen.height)
       .endFill();
 
     bg.eventMode = "static";
-    bg.cursor = "pointer";
-
     bg.on("pointerdown", () => {
       app.stage.removeChild(modal);
     });
 
-    // Panel blanco
+    // Panel
     const panel = new PIXI.Graphics()
       .beginFill(0xffffff)
-      .drawRoundedRect(0, 0, 300, 200, 16)
+      .drawRoundedRect(0, 0, 340, 360, 16)
       .endFill();
 
-    panel.x = app.screen.width / 2 - 150;
-    panel.y = app.screen.height / 2 - 100;
+    panel.x = app.screen.width / 2 - 170;
+    panel.y = app.screen.height / 2 - 180;
 
-    // Texto
-    const text = new PIXI.Text(
-      `Unlock for $${b.unlockCost}?`,
-      { fill: 0x000000, fontSize: 16 }
+    modal.addChild(bg, panel);
+    app.stage.addChild(modal);
+
+    // ===== TEXTOS DINÁMICOS =====
+
+    const nameText = new PIXI.Text(b.name, { fill: 0x000000, fontSize: 20 });
+    nameText.x = panel.x + 20;
+    nameText.y = panel.y + 20;
+
+    const levelText = new PIXI.Text("", { fill: 0x000000, fontSize: 16 });
+    levelText.x = panel.x + 20;
+    levelText.y = panel.y + 60;
+
+    const productionText = new PIXI.Text("", { fill: 0x000000, fontSize: 16 });
+    productionText.x = panel.x + 20;
+    productionText.y = panel.y + 90;
+
+    const storageText = new PIXI.Text("", { fill: 0x000000, fontSize: 16 });
+    storageText.x = panel.x + 20;
+    storageText.y = panel.y + 120;
+
+    const upgradeCostText = new PIXI.Text("", { fill: 0x000000, fontSize: 16 });
+    upgradeCostText.x = panel.x + 20;
+    upgradeCostText.y = panel.y + 150;
+
+    const autoText = new PIXI.Text("", { fill: 0x000000, fontSize: 16 });
+    autoText.x = panel.x + 20;
+    autoText.y = panel.y + 180;
+
+
+    modal.addChild(
+      nameText,
+      levelText,
+      productionText,
+      storageText,
+      upgradeCostText,
+      autoText
     );
 
-    text.anchor.set(0.5);
-    text.x = panel.x + 150;
-    text.y = panel.y + 50;
+    // ===== BOTONES =====
 
-    // Botón Unlock
-    const canAfford = store.money >= b.unlockCost;
+    const actionButton = new PIXI.Graphics();
+    actionButton.x = panel.x + 100;
+    actionButton.y = panel.y + 260;
 
-    const button = new PIXI.Graphics()
-      .beginFill(canAfford ? 0x2ecc71 : 0x999999)
-      .drawRoundedRect(0, 0, 140, 44, 10)
-      .endFill();
-
-    button.x = panel.x + 80;
-    button.y = panel.y + 120;
-
-    if (canAfford) {
-      button.eventMode = "static";
-      button.cursor = "pointer";
-
-      button.on("pointerdown", () => {
-        store.unlock(id);
-        app.stage.removeChild(modal);
-      });
-    }
-
-    const buttonLabel = new PIXI.Text("Unlock", {
+    const buttonLabel = new PIXI.Text("", {
       fill: 0xffffff,
       fontSize: 16,
     });
@@ -383,25 +388,77 @@ export function createGameScene(app: PIXI.Application) {
     buttonLabel.x = 70;
     buttonLabel.y = 22;
 
-    button.addChild(buttonLabel);
+    actionButton.addChild(buttonLabel);
+    modal.addChild(actionButton);
 
-    // Botón cerrar ❌
-    const closeText = new PIXI.Text("✖", {
-      fill: 0x000000,
-      fontSize: 18,
-    });
+    // ===== UPDATE LOOP =====
 
-    closeText.eventMode = "static";
-    closeText.cursor = "pointer";
-    closeText.x = panel.x + 270;
-    closeText.y = panel.y + 10;
+    function updateModal() {
+      if (!b) return;
+      if (!b.unlocked) {
+        levelText.text = "Locked";
+        productionText.text = "";
+        storageText.text = "";
+        upgradeCostText.text = `Unlock cost: $${b.unlockCost}`;
 
-    closeText.on("pointerdown", () => {
+        actionButton.clear();
+        actionButton.beginFill(
+          store.money >= b.unlockCost ? 0x2ecc71 : 0x999999
+        );
+        actionButton.drawRoundedRect(0, 0, 140, 44, 10);
+        actionButton.endFill();
+
+        buttonLabel.text = "Unlock";
+
+        if (store.money >= b.unlockCost) {
+          actionButton.eventMode = "static";
+          actionButton.cursor = "pointer";
+          actionButton.on("pointerdown", () => {
+            store.unlock(id);
+          });
+        }
+      } else {
+        levelText.text = `Level: ${b.level}`;
+        const productionPerSecond = b.baseProduction * b.level;
+        productionText.text = `Production/s: ${productionPerSecond}`;
+        storageText.text = `Storage: ${Math.floor(b.storage)}`;
+        const upgradeCost = b.upgradeBaseCost * b.level;
+        upgradeCostText.text = `Upgrade cost: $${upgradeCost}`;
+        autoText.text = `Auto-collect: ${b.autoCollectUnlocked ? "ON" : "OFF"}`;
+
+        actionButton.clear();
+        actionButton.beginFill(
+          store.money >= upgradeCost ? 0x3498db : 0x999999
+        );
+        actionButton.drawRoundedRect(0, 0, 140, 44, 10);
+        actionButton.endFill();
+
+        buttonLabel.text = "Upgrade";
+
+        if (store.money >= upgradeCost) {
+          actionButton.eventMode = "static";
+          actionButton.cursor = "pointer";
+          actionButton.on("pointerdown", () => {
+            store.upgrade(id);
+          });
+        }
+      }
+    }
+
+    updateModal();
+
+    // Update
+    const tickerFn = () => {
+      updateModal();
+    };
+
+    app.ticker.add(tickerFn);
+
+    // Cleanup
+    bg.on("pointerdown", () => {
+      app.ticker.remove(tickerFn);
       app.stage.removeChild(modal);
     });
-
-    modal.addChild(bg, panel, text, button, closeText);
-    app.stage.addChild(modal);
   }
 }
 
