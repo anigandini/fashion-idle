@@ -97,8 +97,6 @@ export const useGameStore = defineStore('game', {
 
       this.money -= cost;
       b.level += 1;
-
-      // Storage escala levemente
       b.storage += 5;
 
       /*if (b.level >= 50) {
