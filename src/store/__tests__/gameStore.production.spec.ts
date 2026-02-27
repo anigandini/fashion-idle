@@ -17,7 +17,7 @@ describe("GameStore - Production System", () => {
     building.level = 2;
     building.unlocked = true;
 
-    store.update(1); // 1 second
+    store.tick(1); // 1 second
 
     expect(building.accumulated).toBe(20);
   });
@@ -33,7 +33,7 @@ describe("GameStore - Production System", () => {
     building.storage = 50;
     building.unlocked = true;
 
-    store.update(1);
+    store.tick(1);
 
     expect(building.accumulated).toBe(50);
   });
@@ -48,7 +48,7 @@ describe("GameStore - Production System", () => {
     if (!b1) return;
     expect(b2).toBeDefined();
     if (!b2) return;
-    
+
 
     b1.unlocked = true;
     b1.level = 1;
@@ -58,7 +58,7 @@ describe("GameStore - Production System", () => {
     b2.level = 2;
     b2.baseProduction = 5;
 
-    store.update(1);
+    store.tick(1);
 
     expect(b1.accumulated).toBe(10);
     expect(b2.accumulated).toBe(10);
@@ -74,7 +74,7 @@ describe("GameStore - Production System", () => {
     building.level = 5;
     building.baseProduction = 100;
 
-    store.update(1);
+    store.tick(1);
 
     expect(building.accumulated).toBe(0);
   });
@@ -89,7 +89,7 @@ describe("GameStore - Production System", () => {
     building.level = 0;
     building.baseProduction = 100;
 
-    store.update(1);
+    store.tick(1);
 
     expect(building.accumulated).toBe(0);
   });
@@ -102,11 +102,12 @@ describe("GameStore - Production System", () => {
     if (!building) return;
 
     building.unlocked = true;
-    building.level = 2;
-    building.baseProduction = 10;
     building.autoCollectUnlocked = true;
+    building.storage = 20;
+    building.baseProduction = 20;
+    building.level = 1;
 
-    store.update(1);
+    store.tick(1);
 
     expect(store.money).toBe(20);
     expect(building.accumulated).toBe(0);

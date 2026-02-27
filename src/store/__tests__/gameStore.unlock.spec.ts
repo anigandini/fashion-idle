@@ -63,7 +63,7 @@ describe("Unlock System", () => {
 
         const prevAccumulated = building.accumulated;
 
-        store.update(1); // simulate 1 second
+        store.tick(1); // simulate 1 second
 
         expect(building.accumulated).toBeGreaterThan(prevAccumulated);
     });
@@ -74,7 +74,7 @@ describe("Unlock System", () => {
 
         const prevAccumulated = building.accumulated;
 
-        store.update(1);
+        store.tick(1);
 
         expect(building.accumulated).toBe(prevAccumulated);
     });
