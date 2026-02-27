@@ -10,12 +10,12 @@ describe("HUD production calculation", () => {
   it("sums production of unlocked buildings only", () => {
     const store = useGameStore();
 
-    const clasic = store.buildings.find(b => b.id === "clasic")!;
+    const classic = store.buildings.find(b => b.id === "classic")!;
     const romantic = store.buildings.find(b => b.id === "romantic")!;
 
-    clasic.unlocked = true;
-    clasic.level = 2;
-    clasic.baseProduction = 10;
+    classic.unlocked = true;
+    classic.level = 2;
+    classic.baseProduction = 10;
 
     romantic.unlocked = false;
     romantic.level = 5;

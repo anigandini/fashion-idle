@@ -6,8 +6,9 @@ export const useGameStore = defineStore('game', {
     money: 0,
     buildings: [
       {
-        id: "clasic",
+        id: "classic",
         name: "Maison Clásica",
+        skin: "classic",
         unlocked: true,
         unlockCost: 0,
         level: 1,
@@ -20,6 +21,7 @@ export const useGameStore = defineStore('game', {
       {
         id: "romantic",
         name: "L'Amour Boutique",
+        skin: "romantic",
         unlocked: false,
         unlockCost: 250,
         level: 0,
@@ -32,6 +34,7 @@ export const useGameStore = defineStore('game', {
       {
         id: "elegant",
         name: "Elegance House",
+        skin: "elegant",
         unlocked: false,
         unlockCost: 1000,
         level: 0,

@@ -15,35 +15,35 @@ describe("Upgrade System", () => {
 
   it("increases level on upgrade", () => {
     const store = useGameStore();
-    const building = getBuilding(store, "clasic");
+    const building = getBuilding(store, "classic");
 
     building.unlocked = true;
     store.money = 1000;
 
     const prevLevel = building.level;
 
-    store.upgrade("clasic");
+    store.upgrade("classic");
 
     expect(building.level).toBe(prevLevel + 1);
   });
 
   it("reduces player money correctly", () => {
     const store = useGameStore();
-    const building = getBuilding(store, "clasic");
+    const building = getBuilding(store, "classic");
 
     building.unlocked = true;
     store.money = 1000;
 
     const cost = store.getUpgradeCost(building);
 
-    store.upgrade("clasic");
+    store.upgrade("classic");
 
     expect(store.money).toBe(1000 - cost);
   });
 
   it("increases production after upgrade", () => {
     const store = useGameStore();
-    const building = getBuilding(store, "clasic");
+    const building = getBuilding(store, "classic");
 
     building.unlocked = true;
     building.baseProduction = 10;
@@ -51,7 +51,7 @@ describe("Upgrade System", () => {
 
     store.money = 1000;
 
-    store.upgrade("clasic");
+    store.upgrade("classic");
 
     expect(building.level).toBe(2);
     expect(building.baseProduction * building.level).toBe(20);
@@ -59,14 +59,14 @@ describe("Upgrade System", () => {
 
   it("increases next upgrade cost", () => {
     const store = useGameStore();
-    const building = getBuilding(store, "clasic");
+    const building = getBuilding(store, "classic");
 
     building.unlocked = true;
     store.money = 10000;
 
     const costBefore = store.getUpgradeCost(building);
 
-    store.upgrade("clasic");
+    store.upgrade("classic");
 
     const costAfter = store.getUpgradeCost(building);
 
@@ -75,14 +75,14 @@ describe("Upgrade System", () => {
 
   it("does not upgrade if player has insufficient money", () => {
     const store = useGameStore();
-    const building = getBuilding(store, "clasic");
+    const building = getBuilding(store, "classic");
 
     building.unlocked = true;
     store.money = 0;
 
     const prevLevel = building.level;
 
-    store.upgrade("clasic");
+    store.upgrade("classic");
 
     expect(building.level).toBe(prevLevel);
   });

@@ -15,48 +15,48 @@ describe("Manual Collection", () => {
 
   it("adds accumulated to player money", () => {
     const store = useGameStore();
-    const building = getBuilding(store, "clasic");
+    const building = getBuilding(store, "classic");
 
     building.unlocked = true;
     building.accumulated = 50;
 
-    store.collect("clasic");
+    store.collect("classic");
 
     expect(store.money).toBe(50);
   });
 
   it("resets accumulated to 0", () => {
     const store = useGameStore();
-    const building = getBuilding(store, "clasic");
+    const building = getBuilding(store, "classic");
 
     building.unlocked = true;
     building.accumulated = 50;
 
-    store.collect("clasic");
+    store.collect("classic");
 
     expect(building.accumulated).toBe(0);
   });
 
   it("does nothing if accumulated is 0", () => {
     const store = useGameStore();
-    const building = getBuilding(store, "clasic");
+    const building = getBuilding(store, "classic");
 
     building.unlocked = true;
     building.accumulated = 0;
 
-    store.collect("clasic");
+    store.collect("classic");
 
     expect(store.money).toBe(0);
   });
 
   it("does nothing if building is locked", () => {
     const store = useGameStore();
-    const building = getBuilding(store, "clasic");
+    const building = getBuilding(store, "classic");
 
     building.unlocked = false;
     building.accumulated = 50;
 
-    store.collect("clasic");
+    store.collect("classic");
 
     expect(store.money).toBe(0);
     expect(building.accumulated).toBe(50);
@@ -64,7 +64,7 @@ describe("Manual Collection", () => {
 
   it("only collects from selected building", () => {
     const store = useGameStore();
-    const b1 = getBuilding(store, "clasic");
+    const b1 = getBuilding(store, "classic");
     const b2 = getBuilding(store, "romantic");
 
     b1.unlocked = true;
@@ -73,7 +73,7 @@ describe("Manual Collection", () => {
     b1.accumulated = 30;
     b2.accumulated = 70;
 
-    store.collect("clasic");
+    store.collect("classic");
 
     expect(store.money).toBe(30);
     expect(b1.accumulated).toBe(0);

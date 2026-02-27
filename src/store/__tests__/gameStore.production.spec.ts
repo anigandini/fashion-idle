@@ -10,7 +10,7 @@ describe("GameStore - Production System", () => {
   it("produces baseProduction * level into accumulated", () => {
     const store = useGameStore();
 
-    const building = store.buildings.find(b => b.id === "clasic");
+    const building = store.buildings.find(b => b.id === "classic");
     expect(building).toBeDefined();
     if (!building) return;
     building.baseProduction = 10;
@@ -25,7 +25,7 @@ describe("GameStore - Production System", () => {
   it("does not exceed storage", () => {
     const store = useGameStore();
 
-    const building = store.buildings.find(b => b.id === "clasic");
+    const building = store.buildings.find(b => b.id === "classic");
     expect(building).toBeDefined();
     if (!building) return;
     building.baseProduction = 100;

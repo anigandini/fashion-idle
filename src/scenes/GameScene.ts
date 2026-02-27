@@ -34,7 +34,7 @@ export function createGameScene(app: PIXI.Application) {
   createHUD(app);
 
   const styleColors: Record<string, number> = {
-    clasic: 0xff4da6,
+    classic: 0xff4da6,
     romantic: 0xff9ff3,
     elegant: 0x2d3436,
   };
