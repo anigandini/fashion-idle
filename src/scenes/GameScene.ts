@@ -12,6 +12,8 @@ export function createGameScene(app: PIXI.Application) {
   const upgradeLabels: Record<string, PIXI.Text> = {};
   const upgradeButtons: Record<string, PIXI.Graphics> = {};
   const collectButtons: Record<string, PIXI.Graphics> = {};
+  const lockOverlays: Record<string, PIXI.Graphics> = {};
+  const lockIcons: Record<string, PIXI.Text> = {};
 
   // 🌸 SKY
   const bg = new PIXI.Graphics()
@@ -49,6 +51,30 @@ export function createGameScene(app: PIXI.Application) {
 
     container.addChild(building);
 
+    // 🔓 LOCK STATUS
+    const lockOverlay = new PIXI.Graphics()
+      .beginFill(0x000000, 0.6)
+      .drawRoundedRect(0, 0, 160, 220, 20)
+      .endFill();
+
+    lockOverlay.visible = false;
+    container.addChild(lockOverlay);
+
+    const lockIcon = new PIXI.Text("🔒", {
+      fontSize: 40,
+    });
+
+    lockIcon.anchor.set(0.5);
+    lockIcon.x = 80;
+    lockIcon.y = 80;
+    lockIcon.visible = false;
+
+    container.addChild(lockIcon);
+
+    lockOverlays[id] = lockOverlay;
+    lockIcons[id] = lockIcon;
+
+
     // 🔓 UNLOCK ON CLICK (building body)
     building.eventMode = "static";
     building.cursor = "pointer";
@@ -58,7 +84,7 @@ export function createGameScene(app: PIXI.Application) {
       if (!b) return;
 
       if (!b.unlocked) {
-        store.unlock(id);
+        openUnlockModal(id);
       }
     });
 
@@ -194,16 +220,21 @@ export function createGameScene(app: PIXI.Application) {
       const upgradeLabel = upgradeLabels[b.id];
       const upgradeButton = upgradeButtons[b.id];
       const collectButton = collectButtons[b.id];
+      const lockOverlay = lockOverlays[b.id];
+      const lockIcon = lockIcons[b.id];
 
       if (!container || !level || !upgradeLabel || !upgradeButton || !collectButton) return;
 
       if (!b.unlocked) {
-        container.alpha = 0.35;
+        container.alpha = 1;
+        lockOverlay.visible = true;
+        lockIcon.visible = true;
         level.text = `Unlock $${b.unlockCost}`;
         upgradeButton.alpha = 0;
         collectButton.alpha = 0;
       } else {
-        container.alpha = 1;
+        lockOverlay.visible = false;
+        lockIcon.visible = false;
         level.text = `Lv.${b.level}`;
 
         const cost = store.getUpgradeCost(b);
@@ -212,6 +243,8 @@ export function createGameScene(app: PIXI.Application) {
         upgradeButton.alpha = store.money >= cost ? 1 : 0.5;
         collectButton.alpha = b.accumulated > 0 ? 1 : 0.5;
       }
+
+
     });
   }
 
@@ -280,6 +313,95 @@ export function createGameScene(app: PIXI.Application) {
     };
 
     app.ticker.add(tickerFn);
+  }
+
+  function openUnlockModal(id: string) {
+    const b = store.buildings.find(b => b.id === id);
+    if (!b) return;
+
+    const modal = new PIXI.Container();
+
+    // Fondo oscuro
+    const bg = new PIXI.Graphics()
+      .beginFill(0x000000, 0.7)
+      .drawRect(0, 0, app.screen.width, app.screen.height)
+      .endFill();
+
+    bg.eventMode = "static";
+    bg.cursor = "pointer";
+
+    bg.on("pointerdown", () => {
+      app.stage.removeChild(modal);
+    });
+
+    // Panel blanco
+    const panel = new PIXI.Graphics()
+      .beginFill(0xffffff)
+      .drawRoundedRect(0, 0, 300, 200, 16)
+      .endFill();
+
+    panel.x = app.screen.width / 2 - 150;
+    panel.y = app.screen.height / 2 - 100;
+
+    // Texto
+    const text = new PIXI.Text(
+      `Unlock for $${b.unlockCost}?`,
+      { fill: 0x000000, fontSize: 16 }
+    );
+
+    text.anchor.set(0.5);
+    text.x = panel.x + 150;
+    text.y = panel.y + 50;
+
+    // Botón Unlock
+    const canAfford = store.money >= b.unlockCost;
+
+    const button = new PIXI.Graphics()
+      .beginFill(canAfford ? 0x2ecc71 : 0x999999)
+      .drawRoundedRect(0, 0, 140, 44, 10)
+      .endFill();
+
+    button.x = panel.x + 80;
+    button.y = panel.y + 120;
+
+    if (canAfford) {
+      button.eventMode = "static";
+      button.cursor = "pointer";
+
+      button.on("pointerdown", () => {
+        store.unlock(id);
+        app.stage.removeChild(modal);
+      });
+    }
+
+    const buttonLabel = new PIXI.Text("Unlock", {
+      fill: 0xffffff,
+      fontSize: 16,
+    });
+
+    buttonLabel.anchor.set(0.5);
+    buttonLabel.x = 70;
+    buttonLabel.y = 22;
+
+    button.addChild(buttonLabel);
+
+    // Botón cerrar ❌
+    const closeText = new PIXI.Text("✖", {
+      fill: 0x000000,
+      fontSize: 18,
+    });
+
+    closeText.eventMode = "static";
+    closeText.cursor = "pointer";
+    closeText.x = panel.x + 270;
+    closeText.y = panel.y + 10;
+
+    closeText.on("pointerdown", () => {
+      app.stage.removeChild(modal);
+    });
+
+    modal.addChild(bg, panel, text, button, closeText);
+    app.stage.addChild(modal);
   }
 }
 
