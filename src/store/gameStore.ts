@@ -54,22 +54,36 @@ export const useGameStore = defineStore('game', {
   },
 
   actions: {
-    // =====================
-    // UPDATE (llamado desde Pixi ticker)
-    // =====================
-    update(delta: number) {
-      this.buildings.forEach((b) => {
-        if (!b.unlocked || b.level === 0) return;
+    tick(delta: number) {
+      const autoCollected: { id: string; amount: number }[] = [];
 
-        const productionPerSecond = b.baseProduction * b.level;
+      this.buildings.forEach(b => {
+        if (!b.unlocked) return;
 
-        if (b.autoCollectUnlocked) {
-          this.money += productionPerSecond * delta;
-        } else {
-          const next = b.accumulated + productionPerSecond * delta;
-          b.accumulated = Math.min(next, b.storage);
+        const production = b.baseProduction * b.level * delta;
+        const storageCap = b.storage;
+
+        b.accumulated += production;
+
+        if (!b.autoCollectUnlocked) {
+          if (b.accumulated >= storageCap) {
+            b.accumulated = storageCap;
+          }
+          return;
+        }
+
+        while (b.accumulated >= storageCap) {
+          this.money += storageCap;
+          b.accumulated -= storageCap;
+
+          autoCollected.push({
+            id: b.id,
+            amount: storageCap,
+          });
         }
       });
+
+      return autoCollected;
     },
 
     // =====================
@@ -99,9 +113,9 @@ export const useGameStore = defineStore('game', {
       b.level += 1;
       b.storage += 5;
 
-      /*if (b.level >= 50) {
+      if (b.level >= 5) {
         b.autoCollectUnlocked = true;
-      }*/
+      }
     },
 
     getUpgradeCost(building: Building) {

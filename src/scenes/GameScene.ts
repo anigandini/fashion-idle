@@ -243,14 +243,20 @@ export function createGameScene(app: PIXI.Application) {
     });
   }
 
-  let lastTime = performance.now();
+  app.ticker.add((ticker) => {
+    const deltaSeconds = ticker.deltaMS / 1000;
+    const autoEvents = store.tick(deltaSeconds);
 
-  app.ticker.add(() => {
-    const now = performance.now();
-    const delta = (now - lastTime) / 1000;
-    lastTime = now;
+    autoEvents?.forEach(event => {
+      const container = buildingsMap[event.id];
+      if (!container) return;
 
-    store.update(delta);
+      spawnFloatingText(
+        container.x + 80,
+        container.y - 20,
+        event.amount
+      );
+    });
 
     store.buildings.forEach(b => {
       const badge = cashLabels[b.id];
@@ -267,7 +273,9 @@ export function createGameScene(app: PIXI.Application) {
         badge.visible = false;
       }
 
-      if (b.accumulated >= b.storage) {
+      const storageCap = b.storage * b.level;
+
+      if (b.accumulated >= storageCap) {
         container.scale.set(1.03);
       } else {
         container.scale.set(1);
@@ -394,12 +402,17 @@ export function createGameScene(app: PIXI.Application) {
     // ===== UPDATE LOOP =====
 
     function updateModal() {
+      const b = store.buildings.find(b => b.id === id);
       if (!b) return;
+
+      actionButton.removeAllListeners();
+
       if (!b.unlocked) {
         levelText.text = "Locked";
         productionText.text = "";
         storageText.text = "";
         upgradeCostText.text = `Unlock cost: $${b.unlockCost}`;
+        autoText.text = "";
 
         actionButton.clear();
         actionButton.beginFill(
@@ -413,35 +426,43 @@ export function createGameScene(app: PIXI.Application) {
         if (store.money >= b.unlockCost) {
           actionButton.eventMode = "static";
           actionButton.cursor = "pointer";
-          actionButton.on("pointerdown", () => {
+          actionButton.once("pointerdown", () => {
             store.unlock(id);
           });
         }
-      } else {
-        levelText.text = `Level: ${b.level}`;
-        const productionPerSecond = b.baseProduction * b.level;
-        productionText.text = `Production/s: ${productionPerSecond}`;
-        storageText.text = `Storage: ${Math.floor(b.storage)}`;
-        const upgradeCost = b.upgradeBaseCost * b.level;
-        upgradeCostText.text = `Upgrade cost: $${upgradeCost}`;
-        autoText.text = `Auto-collect: ${b.autoCollectUnlocked ? "ON" : "OFF"}`;
 
-        actionButton.clear();
-        actionButton.beginFill(
-          store.money >= upgradeCost ? 0x3498db : 0x999999
-        );
-        actionButton.drawRoundedRect(0, 0, 140, 44, 10);
-        actionButton.endFill();
+        return;
+      }
 
-        buttonLabel.text = "Upgrade";
+      // ===== UNLOCKED =====
 
-        if (store.money >= upgradeCost) {
-          actionButton.eventMode = "static";
-          actionButton.cursor = "pointer";
-          actionButton.on("pointerdown", () => {
-            store.upgrade(id);
-          });
-        }
+      levelText.text = `Level: ${b.level}`;
+
+      const productionPerSecond = b.baseProduction * b.level;
+      productionText.text = `Production/s: ${productionPerSecond}`;
+
+      storageText.text = `Storage: ${Math.floor(b.storage)}`;
+
+      const upgradeCost = store.getUpgradeCost(b);
+      upgradeCostText.text = `Upgrade cost: $${upgradeCost}`;
+
+      autoText.text = `Auto-collect: ${b.autoCollectUnlocked ? "ON" : "OFF"}`;
+
+      actionButton.clear();
+      actionButton.beginFill(
+        store.money >= upgradeCost ? 0x3498db : 0x999999
+      );
+      actionButton.drawRoundedRect(0, 0, 140, 44, 10);
+      actionButton.endFill();
+
+      buttonLabel.text = "Upgrade";
+
+      if (store.money >= upgradeCost) {
+        actionButton.eventMode = "static";
+        actionButton.cursor = "pointer";
+        actionButton.once("pointerdown", () => {
+          store.upgrade(id);
+        });
       }
     }
 
